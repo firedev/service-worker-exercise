@@ -21,10 +21,41 @@
     })
 
     serviceWorker = swRegistration.installing || swRegistration.waiting || swRegistration.active
+    sendStatusUpdate(serviceWorker)
 
-    navigator.serviceWorker.addEventListener("controllerchange", function onControllerChange() {
+    navigator.serviceWorker.addEventListener('controllerchange', function onControllerChange() {
       serviceWorker = navigator.serviceWorker.controller
+      sendStatusUpdate(serviceWorker)
     })
+    navigator.serviceWorker.addEventListener('message', onSWMessage)
+  }
+
+  function onSWMessage(event) {
+    const {
+      data
+    } = event
+    if (data.requestStatusUpdate) {
+      sendStatusUpdate(event.ports && event.ports[0])
+    }
+  }
+
+  function sendStatusUpdate(target) {
+    sendSWMessage({
+      statusUpdate: {
+        isOnline,
+        isLoggedIn
+      }
+    }, target)
+  }
+
+  function sendSWMessage(msg, target) {
+    if (target) {
+      target.postMessage(msg)
+    } else if (serviceWorker) {
+      serviceWorker.postMessage(msg)
+    } else {
+      navigator.serviceWorker.controller.postMessage(msg)
+    }
   }
 
   function ready() {
@@ -36,14 +67,17 @@
     window.addEventListener('offline', () => {
       updateIcon(false)
     })
+    sendStatusUpdate()
   }
 
   function updateIcon(status) {
     isOnline = status
     if (isOnline) {
       offlineIcon.classList.add("hidden")
+      sendStatusUpdate(serviceWorker)
     } else {
       offlineIcon.classList.remove("hidden")
+      sendStatusUpdate(serviceWorker)
     }
   }
 })()
