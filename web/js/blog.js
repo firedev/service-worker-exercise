@@ -40,6 +40,10 @@
 
   function updateIcon(status) {
     isOnline = status
-    offlineIcon.style.display = isOnline ? 'none' : 'block'
+    if (isOnline) {
+      offlineIcon.classList.add("hidden")
+    } else {
+      offlineIcon.classList.remove("hidden")
+    }
   }
 })()
