@@ -2,14 +2,14 @@
 (function Blog() {
   'use strict'
 
-  var offlineIcon
-  var isLoggedIn = /isLoggedIn=1/.test(document.cookie.toString() || '')
-  var isOnline = 'onLine' in navigator ? navigator.onLine : true
+  let offlineIcon
+  let isLoggedIn = /isLoggedIn=1/.test(document.cookie.toString() || '')
+  let isOnline = 'onLine' in navigator ? navigator.onLine : true
 
 
-  var usingSW = ('serviceWorker' in navigator)
-  var swRegistration;
-  var serviceWorker;
+  let usingSW = ('serviceWorker' in navigator)
+  let swRegistration;
+  let serviceWorker;
 
   initServiceWorker().catch(console.error)
 

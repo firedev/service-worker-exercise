@@ -2,11 +2,11 @@
 
 const version = 3
 
-var isOnline = true
-var isLoggedIn = false
+let isOnline = true
+let isLoggedIn = false
 
-var cacheName = `cache-${version}`
-var urlsToCache = {
+const cacheName = `cache-${version}`
+const urlsToCache = {
   loggedOut: [
     "/",
     "/about",
@@ -39,12 +39,12 @@ async function main() {
 }
 
 async function sendMessage(msg) {
-  var allClients = await clients.matchAll({
+  const allClients = await clients.matchAll({
     includeUncontrolled: true
   })
   return Promise.all(
     allClients.map(function clientMsg(client) {
-      var channel = new MessageChannel()
+      const channel = new MessageChannel()
       channel.port1.onmessage = onMessage
       return client.postMessage(msg, [channel.port2])
     })
@@ -80,7 +80,7 @@ async function handleActivation() {
 }
 
 async function cacheLoggedOutFiles(forceReload = false) {
-  var cache = await caches.open(cacheName)
+  const cache = await caches.open(cacheName)
   return Promise.all(
     urlsToCache.loggedOut.map(async function requestFile(url) {
       try {
@@ -107,8 +107,8 @@ async function cacheLoggedOutFiles(forceReload = false) {
 }
 
 async function clearCaches() {
-  var cacheNames = await caches.keys()
-  var oldCacheNames = cacheNames.filter(function matchOldCache(cacheName) {
+  const cacheNames = await caches.keys()
+  const oldCacheNames = cacheNames.filter(function matchOldCache(cacheName) {
     if (/^cache-\d+$/.test(cacheName)) {
       let [, cacheVersion] = cacheName.match(/^cache-(\d+)$/)
       cacheVersion = (cacheVersion != null) ? Number(cacheVersion) : 0
