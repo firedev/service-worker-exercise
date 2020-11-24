@@ -72,6 +72,7 @@ async function onActivate(event) {
 }
 
 async function handleActivation() {
+  await clearCaches()
   await clients.claim()
   await cacheLoggedOutFiles(true)
   console.log(`worker v${version} is activated`)
@@ -100,6 +101,24 @@ async function cacheLoggedOutFiles(forceReload = false) {
           await cache.put(url, res.clone())
         }
       } catch (error) {}
+    })
+  )
+}
+
+async function clearCaches() {
+  var cacheNames = await caches.keys()
+  var oldCacheNames = cacheNames.filter(function matchOldCache(cacheName) {
+    if (/^cache-\d+$/.test(cacheName)) {
+      let [, cacheVersion] = cacheName.match(/^cache-(\d+)$/)
+      cacheVersion = (cacheVersion != null) ? Number(cacheVersion) : 0
+      return (
+        cacheVersion > 0 && cacheVersion != version
+      )
+    }
+  })
+  return Promise.all(
+    oldCacheNames.map(function deleteCache(cacheName) {
+      return caches.delete(cacheName)
     })
   )
 }
