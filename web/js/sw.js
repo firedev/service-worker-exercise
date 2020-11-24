@@ -27,6 +27,7 @@ var urlsToCache = {
 self.addEventListener('install', onInstall)
 self.addEventListener('activate', onActivate)
 self.addEventListener('message', onMessage)
+self.addEventListener('fetch', onFetch)
 
 main().catch(console.error)
 
@@ -121,4 +122,38 @@ async function clearCaches() {
       return caches.delete(cacheName)
     })
   )
+}
+
+function onFetch(event) {
+  event.respondWith(router(event.request))
+}
+
+async function router(req) {
+  const url = new URL(req.url)
+  const reqURL = url.pathname
+  const cache = await caches.open(cacheName)
+
+  if (url.origin == location.origin) {
+    try {
+      const fetchOptions = {
+        credentials: 'omit',
+        cache: 'no-store',
+        method: req.method, // "GET"
+        headers: req.headers,
+      }
+      const res = await fetch(req.url, fetchOptions)
+      if (res && res.ok) {
+        await cache.put(reqURL, res.clone())
+        return res
+      }
+
+      // TODO: figure out CORS
+    } catch (error) {
+      console.log(error)
+    }
+    const res = await cache.match(reqURL)
+    if (res) {
+      return res.clone()
+    }
+  }
 }
