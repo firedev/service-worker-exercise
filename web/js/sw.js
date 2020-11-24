@@ -1,9 +1,28 @@
 'use strict'
 
-const version = 2
+const version = 3
 
 var isOnline = true
 var isLoggedIn = false
+
+var cacheName = `cache-${version}`
+var urlsToCache = {
+  loggedOut: [
+    "/",
+    "/about",
+    "/contact",
+    "/login",
+    "/404",
+    "/offline",
+    "/css/style.css",
+    "/js/blog.js",
+    "/js/home.js",
+    "/js/login.js",
+    "/js/add-post.js",
+    "/images/logo.gif",
+    "/images/offline.png",
+  ]
+}
 
 self.addEventListener('install', onInstall)
 self.addEventListener('activate', onActivate)
@@ -15,6 +34,7 @@ async function main() {
   await sendMessage({
     requestStatusUpdate: true
   })
+  await cacheLoggedOutFiles()
 }
 
 async function sendMessage(msg) {
@@ -53,5 +73,33 @@ async function onActivate(event) {
 
 async function handleActivation() {
   await clients.claim()
+  await cacheLoggedOutFiles(true)
   console.log(`worker v${version} is activated`)
+}
+
+async function cacheLoggedOutFiles(forceReload = false) {
+  var cache = await caches.open(cacheName)
+  return Promise.all(
+    urlsToCache.loggedOut.map(async function requestFile(url) {
+      try {
+        let res
+        if (!forceReload) {
+          res = await cache.match(url)
+          if (res) return res
+        }
+
+        let fetchOptions = {
+          method: "GET",
+          cache: "no-cache", // cache busting
+          credentials: "omit", // cookies
+        }
+        res = await fetch(url, fetchOptions)
+        if (res.ok) {
+          // clone() is not needed here
+          // needed to properly return response to browser
+          await cache.put(url, res.clone())
+        }
+      } catch (error) {}
+    })
+  )
 }

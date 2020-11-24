@@ -7,7 +7,7 @@
   var isOnline = 'onLine' in navigator ? navigator.onLine : true
 
 
-  var usingSW = ("serviceWorker" in navigator)
+  var usingSW = ('serviceWorker' in navigator)
   var swRegistration;
   var serviceWorker;
 
@@ -53,8 +53,10 @@
       target.postMessage(msg)
     } else if (serviceWorker) {
       serviceWorker.postMessage(msg)
-    } else {
+    } else if (navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage(msg)
+    } else {
+      console.warn(msg, 'is discarded')
     }
   }
 
