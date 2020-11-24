@@ -1,6 +1,4 @@
-'use strict'
-
-const version = 3
+const version = 4
 
 let isOnline = true
 let isLoggedIn = false
@@ -8,19 +6,19 @@ let isLoggedIn = false
 const cacheName = `cache-${version}`
 const urlsToCache = {
   loggedOut: [
-    "/",
-    "/about",
-    "/contact",
-    "/login",
-    "/404",
-    "/offline",
-    "/css/style.css",
-    "/js/blog.js",
-    "/js/home.js",
-    "/js/login.js",
-    "/js/add-post.js",
-    "/images/logo.gif",
-    "/images/offline.png",
+    '/',
+    '/about',
+    '/contact',
+    '/login',
+    '/404',
+    '/offline',
+    '/css/style.css',
+    '/js/blog.js',
+    '/js/home.js',
+    '/js/login.js',
+    '/js/add-post.js',
+    '/images/logo.gif',
+    '/images/offline.png',
   ]
 }
 
@@ -91,9 +89,9 @@ async function cacheLoggedOutFiles(forceReload = false) {
         }
 
         let fetchOptions = {
-          method: "GET",
-          cache: "no-cache", // cache busting
-          credentials: "omit", // cookies
+          method: 'GET',
+          cache: 'no-cache', // cache busting
+          credentials: 'omit', // cookies
         }
         res = await fetch(url, fetchOptions)
         if (res.ok) {
@@ -128,32 +126,101 @@ function onFetch(event) {
   event.respondWith(router(event.request))
 }
 
+
+function notFoundResponse() {
+  return new Response('', {
+    status: 404,
+    statusText: 'Not Found',
+  })
+}
+
 async function router(req) {
   const url = new URL(req.url)
   const reqURL = url.pathname
   const cache = await caches.open(cacheName)
 
+  // site own URL
   if (url.origin == location.origin) {
-    try {
-      const fetchOptions = {
-        credentials: 'omit',
-        cache: 'no-store',
-        method: req.method, // "GET"
-        headers: req.headers,
-      }
-      const res = await fetch(req.url, fetchOptions)
-      if (res && res.ok) {
-        await cache.put(reqURL, res.clone())
-        return res
+    // api?
+    if (/^\/api\/.+$/.test(reqURL)) {
+      let res
+      if (isOnline) {
+        try {
+          const fetchOptions = {
+            method: req.method,
+            headers: req.headers,
+            credentials: 'same-origin',
+            cache: 'no-store',
+          }
+          res = await fetch(req.url, fetchOptions)
+          if (res && res.ok) {
+            if (req.method === 'GET') {
+              await cache.put(reqURL, res.clone())
+            }
+            return res;
+          }
+        } catch (error) {}
       }
 
-      // TODO: figure out CORS
-    } catch (error) {
-      console.log(error)
+      res = await cache.match(reqURL)
+      if (res) return res
+      return notFoundResponse()
     }
-    const res = await cache.match(reqURL)
-    if (res) {
-      return res.clone()
+    // page request
+    if (req.headers.get('Accept').includes('text/html')) {
+      // login-aware
+      if (/^\/(?:login|logout|add-post)$/.test(reqURL)) {
+        // TODO
+      } else {
+        // use 'network-and-cache'
+        let res
+        if (isOnline) {
+          try {
+            const fetchOptions = {
+              method: req.method,
+              headers: req.headers,
+              cache: 'no-store',
+            }
+            res = await fetch(req.url, fetchOptions)
+            if (res && res.ok) {
+              if (!res.headers.get('X-Not-Found')) {
+                await cache.put(reqURL, res.clone())
+              }
+              return res;
+            }
+          } catch (error) {}
+        }
+        // fetch failed try cache
+        res = await cache.match(reqURL)
+        if (res) {
+          return res
+        }
+        // or return offline-friendly page
+        return cache.match('/offline')
+      }
+    } else {
+      // cache-first
+      let res = await cache.match(reqURL)
+      if (res) return res
+
+      if (isOnline) {
+        try {
+          const fetchOptions = {
+            method: req.method,
+            headers: req.headers,
+            cache: 'no-store',
+          }
+          res = await fetch(req.url, fetchOptions)
+          if (res && res.ok) {
+            await cache.put(reqURL, res.clone())
+            return res
+          }
+        } catch (error) {}
+      }
+
+      // otherwise - 404
+      return notFoundResponse()
     }
   }
+  return notFoundResponse()
 }
