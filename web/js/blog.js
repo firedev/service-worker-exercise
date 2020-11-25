@@ -1,4 +1,4 @@
-(function Blog() {
+(function Blog(global) {
   let offlineIcon
   let isLoggedIn = /isLoggedIn=1/.test(document.cookie.toString() || '')
   let isOnline = 'onLine' in navigator ? navigator.onLine : true
@@ -6,6 +6,12 @@
   // const usingSW = ('serviceWorker' in navigator)
   let swRegistration;
   let serviceWorker;
+
+  function isBlogOnline() {
+    return isOnline
+  }
+
+  global.isBlogOnline = isBlogOnline
 
   function sendSWMessage(msg, target) {
     if (target) {
@@ -83,4 +89,4 @@
   // eslint-disable-next-line no-console
   initServiceWorker().catch(console.error)
   document.addEventListener('DOMContentLoaded', ready, false)
-}())
+}(window))

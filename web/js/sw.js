@@ -1,5 +1,7 @@
 /* eslint-disable prefer-arrow-callback */
-const version = 7
+importScripts('/js/external/idb-keyval-iife.min.js')
+
+const version = 8
 
 let isOnline = true
 let isLoggedIn = false
@@ -21,6 +23,7 @@ const urlsToCache = {
     '/js/add-post.js',
     '/images/logo.gif',
     '/images/offline.png',
+    '/js/external/idb-keyval-iife.min.js',
   ],
 }
 async function safeRequest(reqURL, req, options, {
@@ -163,6 +166,9 @@ async function router(req) {
       if (res) {
         if (req.method === 'GET') {
           await cache.put(reqURL, res.clone())
+        } else if (reqURL == '/api/add-post') {
+          // eslint-disable-next-line no-undef
+          await idbKeyval.del('add-post-backup')
         }
         return res
       }
@@ -289,6 +295,8 @@ async function router(req) {
         if (res) {
           if (!res.headers.get('X-Not-Found')) {
             await cache.put(reqURL, res.clone())
+          } else {
+            await cache.delete(reqURL)
           }
           return res
         }
